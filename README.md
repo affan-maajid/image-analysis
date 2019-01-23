@@ -11,3 +11,4 @@ The results of the analysis are then made available to the user in text and audi
 * watson-developer-cloud
 * winston
 * chai
+* Bootstrap
