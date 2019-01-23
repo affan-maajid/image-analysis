@@ -1,0 +1,277 @@
+<html>
+<head>
+    <title>
+        Iteration 2
+    </title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/siofu/client.js"></script>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function(){
+            $('#audioButton').hide();
+            $('#inputImg').hide();
+            let faceLocation;
+        const socket = io.connect();
+        const uploader = new SocketIOFileUpload(socket);
+        /*
+        document.getElementById("my_button").addEventListener("click", function () {
+
+                if(document.getElementById("siofu_input").files.length === 0 ){
+                    //console.log("no files selected");
+                    uploader.prompt();
+                }
+        });
+        */
+
+        //uploader.listenOnSubmit(document.getElementById("my_button"), document.getElementById("siofu_input"));
+
+        uploader.listenOnInput(document.getElementById("siofu_input"));
+
+        uploader.maxFileSize = 10000000;
+
+
+        uploader.addEventListener("choose", function(event){
+            console.log("File chosen.");
+        });
+
+
+        uploader.addEventListener("start", function(event){
+            console.log("Upload started.");
+            console.log(event.file.name);
+        });
+
+
+
+        // Do something on upload progress:
+        uploader.addEventListener("progress", function(event){
+            let percent = event.bytesLoaded / event.file.size * 100;
+            console.log("File is " + percent.toFixed(2) + "% loaded");
+        });
+
+
+        uploader.addEventListener("load", function(event){
+            console.log("File loaded. Awaiting response from server.");
+            console.log(event.name);
+        });
+
+
+
+        // Do something when a file is uploaded:
+        uploader.addEventListener("complete", function(event){
+            console.log(event.success);
+            console.log(event.file);
+            console.log("Upload Complete!")
+        });
+
+        uploader.addEventListener("error", function(data){
+            if (data.code === 1) {
+                alert("Size limit exceeded. Please choose an image which is smaller than 10MB");
+            }
+        });
+
+
+        socket.on('uploadSuccess', function(data) {
+                $('#statusText').text(data);
+            });
+
+
+        socket.on('uploadFail', function(data) {
+                $('#statusText').text(data);
+        });
+
+
+        socket.on('imageAnalysis', function(data) {
+            $('#analysisTitle').text('Image Analysis Description:');
+            $('#analysisDesc').text(data.fullAnalysis);
+            $('#audioButton').show();
+
+        });
+
+
+        socket.on('faceDetection', function(data) {
+            let faceData = data.imgCoord;
+            let imageName = faceData[0];
+            let imgPath = './uploads/' + imageName;
+
+            let inputImgElement = document.getElementById("inputImg");
+            inputImgElement.src = imgPath;
+
+            $('#imgInput').text('Input:');
+            $('#inputImg').show();
+            socket.emit("inputImageLoaded", "Input image load complete");
+        });
+
+        }, false);
+    </script>
+
+
+
+</head>
+<body>
+
+<div class="row">
+    <div class="col-md-3">
+    </div>
+
+
+
+    <div class="col-md-6">
+        <br>
+        <h4>
+            Upload Image for Analysis
+        </h4>
+        <br>
+        <br>
+
+        <label>Choose Image: <input type="file" id="siofu_input" /></label>
+        <!--<button id="my_button">Upload</button>-->
+        <br><br>
+        <div id="status"><h6 id="statusText"></h6></div>
+
+        <br><br>
+        <h6 id="analysisTitle"></h6>
+        <br>
+        <p id="analysisDesc"></p>
+
+        <br>
+        <audio id="myAudio" src=""></audio>
+        <button id="audioButton" onclick="playAudio()" type="button">Play Audio</button>
+
+        <br><br>
+        <h6 id="imgInput"></h6><br>
+        <img id="inputImg" src="">
+
+        <br><br>
+
+        <h6 id="imgOutput"></h6><br>
+        <canvas id="myCanvas" width="900" height="600">Your browser does not support the HTML5 canvas tag.</canvas>
+
+
+    </div>
+
+
+
+    <div class="col-md-3">
+    </div>
+</div>
+
+<script>
+
+    const socket = io.connect();
+
+    let audioNum = 0;
+    let audioNarration = document.getElementById("myAudio");
+    let curAnalysis = $('#analysisDesc').text();
+    console.log("Current Analysis: " + curAnalysis);
+
+    /*
+    The function checkRefresh checks if new image has been uploaded
+    Argument: None
+    Precondition: None
+    Postcondition: None
+    Return: (one) : boolean value
+    User stories 8 fulfilled on client side here
+     */
+
+    function checkRefresh() {
+        let curContent = $('#analysisDesc').text();
+        console.log("Current Content: " + curContent);
+        if (curAnalysis !== curContent) {
+            curAnalysis = curContent;
+            return true;
+        }
+        else {
+            return false;
+        }
+        
+    }
+
+    /*
+    The function playAudio will play the statement that it needs to lay
+    Argument: None
+    Precondition: None
+    Postcondition: None
+    Return: (one) : playing the audio
+    User stories 7 fulfilled on client side here
+     */
+
+    function playAudio(){
+        let path = './audio/narration' + audioNum + '.wav';
+        console.log(path);
+        let newImage = checkRefresh();
+        console.log("Has the image been refreshed: " + newImage);
+        if (newImage){
+            audioNum += 1;
+            path = './audio/narration' + audioNum + '.wav';
+            console.log("Playing: " + path);
+            audioNarration.src = path;
+            audioNarration.play();
+        }
+        else {
+            console.log("Playing: " + path);
+            audioNarration.src = path;
+            audioNarration.play();
+        }
+
+
+    }
+
+
+    /*
+    The following lines of code will draw a rectangle on the face
+    Argument: data : coordinate of where to start drawing rectangle
+    Precondition: None
+    Postcondition: None
+    Output: Image with bounding boxes
+    User stories 10 fulfilled on client side here
+     */
+
+        socket.on('drawRect', function (data) {
+            let faceData = data.faceLocArray;
+            let imageName = faceData[0];
+            let imgPath = './uploads/' + imageName;
+            console.log(imgPath);
+
+
+            let canvas = document.getElementById("myCanvas");
+            
+            let img = new Image();
+            img.src = imgPath;
+            
+            img.onload = function () {
+                let ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                for (let k = 1; k < faceData.length; k++) {
+                    ctx.beginPath();
+                    ctx.lineWidth="2";
+                    ctx.strokeStyle = "white";
+                    ctx.rect(faceData[k].left, faceData[k].top, faceData[k].width, faceData[k].height);
+                    ctx.stroke();
+                }
+                
+            };
+
+
+
+
+            $('#imgOutput').text('Output:');
+            //$('#myCanvas').show();
+
+        });
+  //  }
+
+
+</script>
+
+
+
+</body>
+</html>

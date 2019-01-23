@@ -1,0 +1,25 @@
+{
+  "name": "iteration_2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.3",
+    "mocha": "^5.2.0",
+    "socket.io": "^2.1.1",
+    "socketio-file-upload": "^0.6.0",
+    "watson-developer-cloud": "^3.4.2",
+    "winston": "^2.4.2"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2"
+  }
+}
